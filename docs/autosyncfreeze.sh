@@ -1,19 +1,31 @@
 #!/bin/bash
 
-# Charger les variables secrètes
-source ~/.secrets
+LOGFILE="$HOME/Freeze-hub/autosyncfreeze.log"
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
-# Se placer dans le dossier du projet
-cd ~/Freeze-hub
+echo "----- [$DATE] Début du script de sync automatique -----" | tee -a "$LOGFILE"
 
-# Ajouter les fichiers
+ping -c 1 github.com > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "[$DATE] ERREUR : Pas de connexion internet. Sync annulée." | tee -a "$LOGFILE"
+  exit 1
+fi
+
+cd "$HOME/Freeze-hub" || {
+  echo "[$DATE] ERREUR : Dossier Freeze-hub non trouvé." | tee -a "$LOGFILE"
+  exit 1
+}
+
 git add .
 
-# Créer un commit avec date/heure
-git commit -m "Sync auto depuis Kali - $(date)"
+git commit -m "Sync auto depuis Kali - $DATE" >> "$LOGFILE" 2>&1
 
-# Config GitHub avec token
-git remote set-url origin https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/Freeze-hub.git
+git push origin main >> "$LOGFILE" 2>&1
 
-# Pousser vers GitHub
-git push origin main
+if [ $? -eq 0 ]; then
+  echo "[$DATE] Push réussi ✅" | tee -a "$LOGFILE"
+else
+  echo "[$DATE] ERREUR : Push échoué ❌" | tee -a "$LOGFILE"
+fi
+
+echo "----- [$DATE] Fin du script -----" | tee -a "$LOGFILE"
